@@ -8,11 +8,9 @@ A machine learning project using logistic regression to predict customer churn f
 
 ```
 .
-├── data/                  # Raw and processed datasets
-├── notebook.ipynb         # Jupyter notebook for analysis and modeling
+├── Inference Report       #Learnings from this
 ├── README.md              # Project documentation
-├── requirements.txt       # Python dependencies
-└── churn_predictor.py     # (Optional) Script to run the model
+└── Subscription_Service_Churn_Predictor.ipynb     # (Optional) Script to run the model
 ```
 
 ---
