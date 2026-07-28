@@ -1,127 +1,35 @@
-# Subscription Service Churn Predictor
+# Customer Churn Prediction Dashboard
 
-A machine learning project using logistic regression to predict customer churn for a subscription-based service. This solution includes data preprocessing, model training, evaluation, and feature importance analysis.
+An end-to-end ML project predicting customer churn using XGBoost with SHAP explainability and business impact analysis.
 
----
+## Results
+| Metric | Logistic Regression | XGBoost |
+|--------|-------------------|---------|
+| Accuracy | 80.4% | 79.1% |
+| ROC-AUC | 0.811 | 0.836 |
+| Recall (Churn) | 43.6% | 59.0% |
 
-## 📦 Project Structure
+## Business Impact
+- True Positives (churners correctly identified): 219
+- Estimated annual revenue saved: INR 45.8 Lakhs/year
+- Based on 30% retention success rate on identified churners
 
-```
-.
-├── Inference Report       #Learnings from this
-├── README.md              # Project documentation
-└── Subscription_Service_Churn_Predictor.ipynb     # (Optional) Script to run the model
-```
+## Key Insights (SHAP)
+- IsMonthToMonth contract is the strongest churn driver
+- Longer tenure customers are less likely to churn
+- Higher average charges increase churn probability
 
----
+## Tech Stack
+Python, XGBoost, SHAP, Scikit-learn, SMOTE, Streamlit, Pandas, NumPy
 
-## 🚀 Getting Started
+## Project Structure
+- `train_model.py` — data cleaning, feature engineering, XGBoost training, SHAP
+- `app.py` — Streamlit dashboard with 3 tabs
+- `Subscription_Service_Churn_Predictor.ipynb` — full EDA and model development notebook
 
-### 1. Clone the repository
+## Dataset
+IBM Telco Customer Churn — 7,032 customers, 20 features
+Source: IBM/telco-customer-churn-on-icp4d
 
-```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-```
-
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the notebook
-
-Open `notebook.ipynb` in Jupyter Notebook or JupyterLab:
-
-```bash
-jupyter notebook notebook.ipynb
-```
-
----
-
-## 📊 Data
-
-- **Source**: The dataset typically includes customer demographics, account information, and service usage.
-- **Key Columns**: `tenure`, `TotalCharges`, `MonthlyCharges`, `Contract`, `InternetService`, `PaymentMethod`, `SeniorCitizen`, etc.
-- **Target**: `Churn` (Yes/No)
-
----
-
-## 🔬 Model Overview
-
-- **Algorithm**: Logistic Regression
-- **Objective**: Predict probability of customer churn
-- **Steps**:
-  1. Data cleaning & preprocessing
-  2. Feature engineering & encoding
-  3. Model training & validation
-  4. Evaluation: Accuracy, ROC-AUC, Confusion Matrix
-  5. Feature importance analysis
-
----
-
-## 💡 Feature Importance
-
-Top features **increasing** churn:
-- High `TotalCharges`
-- Month-to-month contracts
-- Fiber optic internet service
-- Electronic check payment method
-- Streaming services enabled
-
-Top features **reducing** churn:
-- Long tenure
-- Two-year contracts
-- DSL or no internet
-- Lower monthly charges
-
-(See notebook for full details.)
-
----
-
-## 📈 Results
-
-- **Accuracy**: _e.g., 82%_
-- **ROC-AUC**: _e.g., 0.85_
-- **Confusion Matrix**: _see notebook output_
-- **Interpretation**: Key drivers of churn identified; actionable insights for retention.
-
----
-
-## 🛠️ Usage
-
-You can use the notebook to:
-- Explore and preprocess your own data
-- Train and evaluate the churn prediction model
-- Analyze which features most influence customer retention
-
----
-
-## 📝 How to Adapt
-
-- Replace `data/` with your own dataset (CSV recommended)
-- Adjust feature engineering steps to suit your data
-- Tune model parameters and try other algorithms (e.g., Random Forest)
-
----
-
-## 📚 References
-
-- [Scikit-learn Documentation](https://scikit-learn.org/stable/)
-- [Pandas Documentation](https://pandas.pydata.org/)
-- [Matplotlib Documentation](https://matplotlib.org/)
-- [Kaggle: Telco Customer Churn Dataset](https://www.kaggle.com/blastchar/telco-customer-churn)
-
----
-
-## 👤 Author
-
-- **Your Name:** Manoj-R27  
-- **GitHub:** [Manoj-R27](https://github.com/Manoj-R27)
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
+## Author
+Manoj-R27 | github.com/Manoj-R27
