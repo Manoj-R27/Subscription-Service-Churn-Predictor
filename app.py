@@ -1,154 +1,128 @@
+from pathlib import Path
 
-import streamlit as st
-import pandas as pd
-import numpy as np
+import json
 import joblib
 import matplotlib.pyplot as plt
+import pandas as pd
+import streamlit as st
 
-st.set_page_config(page_title="Churn Prediction Dashboard", page_icon="📊", layout="wide")
+from src.data import BASE_CATEGORICAL_COLUMNS, customer_row, load_data
+from src.evaluate import BUSINESS_PARAMS
+from src.segment import fit_segmentation
+from src.survival import cox_row, survival_estimate
+
+ROOT = Path(__file__).parent
+ARTIFACTS = ROOT / "artifacts"
+st.set_page_config(page_title="Telco Churn Intelligence", page_icon="📊", layout="wide")
+st.markdown("""
+<style>
+.block-container {max-width: 1180px; padding-top: 2rem;}
+[data-testid="stMetric"] {background: #f4f7f5; border-left: 4px solid #1f6f5b; padding: .8rem;}
+.risk-note {border-radius: 6px; padding: .7rem 1rem; background: #eef6f2; color: #173b32;}
+</style>
+""", unsafe_allow_html=True)
+
 
 @st.cache_resource
-def load_model():
-    xgb = joblib.load("XGB_model.pkl")
-    preprocessor = joblib.load("preprocessor.pkl")
-    features = joblib.load("features.pkl")
-    col_config = joblib.load("col_config.pkl")
-    return xgb, preprocessor, features, col_config
+def load_artifacts():
+    return {"model": joblib.load(ARTIFACTS / "churn_model.pkl"), "xgb": joblib.load(ARTIFACTS / "xgb_model.pkl"), "cox": joblib.load(ARTIFACTS / "cox_model.pkl"), "config": joblib.load(ARTIFACTS / "feature_config.pkl")}
 
-xgb, preprocessor, features, col_config = load_model()
 
-st.title("📊 Customer Churn Prediction Dashboard")
-st.markdown("**XGBoost + SHAP Explainability + Business Impact** | by Manoj-R27")
+@st.cache_data
+def get_data(): return load_data()
 
-tab1, tab2, tab3 = st.tabs([
-    "🔮 Predict Churn",
-    "🧠 SHAP Explainability",
-    "💰 Business Impact"
-])
 
-with tab1:
-    st.header("Predict Customer Churn")
-    col1, col2, col3 = st.columns(3)
+def customer_inputs(frame):
+    defaults = {"gender": "Female", "SeniorCitizen": 0, "Partner": "No", "Dependents": "No", "tenure": 12, "PhoneService": "Yes", "MultipleLines": "No", "InternetService": "Fiber optic", "OnlineSecurity": "No", "OnlineBackup": "No", "DeviceProtection": "No", "TechSupport": "No", "StreamingTV": "No", "StreamingMovies": "No", "Contract": "Month-to-month", "PaperlessBilling": "Yes", "PaymentMethod": "Electronic check", "MonthlyCharges": 70.0, "TotalCharges": 1000.0}
+    labels = {"gender": "Gender", "SeniorCitizen": "Senior citizen", "Partner": "Partner", "Dependents": "Dependents", "tenure": "Tenure (months)", "PhoneService": "Phone service", "MultipleLines": "Multiple lines", "InternetService": "Internet service", "OnlineSecurity": "Online security", "OnlineBackup": "Online backup", "DeviceProtection": "Device protection", "TechSupport": "Tech support", "StreamingTV": "Streaming TV", "StreamingMovies": "Streaming movies", "Contract": "Contract", "PaperlessBilling": "Paperless billing", "PaymentMethod": "Payment method", "MonthlyCharges": "Monthly charges", "TotalCharges": "Total charges"}
+    values = {}
+    columns = st.columns(3)
+    input_columns = BASE_CATEGORICAL_COLUMNS + ["tenure", "MonthlyCharges", "TotalCharges"]
+    for index, column in enumerate(input_columns):
+        default = defaults[column]; container = columns[index % 3]
+        if column == "SeniorCitizen": values[column] = 1 if container.selectbox(labels[column], ["No", "Yes"], index=default, help="Stored as 0 for No and 1 for Yes.") == "Yes" else 0
+        elif isinstance(default, (int, float)): values[column] = container.number_input(labels[column], value=default)
+        else:
+            options = sorted(frame[column].dropna().unique()); values[column] = container.selectbox(labels[column], options, index=options.index(default))
+    return values
 
-    with col1:
-        tenure = st.number_input("Tenure (months)", 0, 100, 12)
-        MonthlyCharges = st.number_input("Monthly Charges ($)", 0.0, 200.0, 70.0)
-        TotalCharges = st.number_input("Total Charges ($)", 0.0, 10000.0, 1000.0)
-        Contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
 
-    with col2:
-        InternetService = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
-        PaymentMethod = st.selectbox("Payment Method", [
-            "Electronic check", "Mailed check",
-            "Bank transfer (automatic)", "Credit card (automatic)"])
-        TechSupport = st.selectbox("Tech Support", ["Yes", "No", "No internet service"])
-        OnlineSecurity = st.selectbox("Online Security", ["Yes", "No", "No internet service"])
+def display_feature_name(name):
+    """Convert transformed pipeline names into customer-facing explanations."""
+    clean = name.replace("num__", "").replace("cat__", "")
+    replacements = {"IsMonthToMonth": "Month-to-month contract", "MonthlyCharges": "Monthly charges", "TotalCharges": "Total charges", "AverageCharges": "Average charges per month", "tenure": "Tenure", "SeniorCitizen": "Senior citizen", "PaymentMethod_": "Payment method: ", "InternetService_": "Internet service: ", "OnlineSecurity_": "Online security: ", "TechSupport_": "Tech support: ", "Contract_": "Contract: ", "MultipleLines_": "Multiple lines: "}
+    for source, target in replacements.items(): clean = clean.replace(source, target)
+    return clean.replace("_", " ")
 
-    with col3:
-        gender = st.selectbox("Gender", ["Male", "Female"])
-        SeniorCitizen = st.selectbox("Senior Citizen", [0, 1])
-        Partner = st.selectbox("Has Partner?", ["Yes", "No"])
-        Dependents = st.selectbox("Has Dependents?", ["Yes", "No"])
-        PhoneService = st.selectbox("Phone Service", ["Yes", "No"])
-        MultipleLines = st.selectbox("Multiple Lines", ["Yes", "No", "No phone service"])
-        PaperlessBilling = st.selectbox("Paperless Billing", ["Yes", "No"])
-        StreamingTV = st.selectbox("Streaming TV", ["Yes", "No", "No internet service"])
-        StreamingMovies = st.selectbox("Streaming Movies", ["Yes", "No", "No internet service"])
-        OnlineBackup = st.selectbox("Online Backup", ["Yes", "No", "No internet service"])
-        DeviceProtection = st.selectbox("Device Protection", ["Yes", "No", "No internet service"])
 
-    if st.button("🔍 Predict Churn", type="primary"):
-        input_data = pd.DataFrame([{
-            'gender': gender,
-            'SeniorCitizen': SeniorCitizen,
-            'Partner': Partner,
-            'Dependents': Dependents,
-            'tenure': tenure,
-            'PhoneService': PhoneService,
-            'MultipleLines': MultipleLines,
-            'InternetService': InternetService,
-            'OnlineSecurity': OnlineSecurity,
-            'OnlineBackup': OnlineBackup,
-            'DeviceProtection': DeviceProtection,
-            'TechSupport': TechSupport,
-            'StreamingTV': StreamingTV,
-            'StreamingMovies': StreamingMovies,
-            'Contract': Contract,
-            'PaperlessBilling': PaperlessBilling,
-            'PaymentMethod': PaymentMethod,
-            'MonthlyCharges': MonthlyCharges,
-            'TotalCharges': TotalCharges,
-            'AverageCharges': MonthlyCharges / max(tenure, 1),
-            'IsMonthToMonth': 1 if Contract == 'Month-to-month' else 0,
-            'HasInternet': 1 if InternetService != 'No' else 0,
-            'TenureGroup': min(int(tenure // 12), 4),
-        }])
+def display_column_name(name):
+    labels = {"segment_id": "Segment", "customers": "Customers", "avg_tenure": "Average tenure (months)", "avg_monthly_charges": "Average monthly charges", "avg_total_charges": "Average total charges", "churn_rate": "Actual churn rate", "dominant_Contract": "Dominant contract", "dominant_InternetService": "Dominant internet service", "name": "Business label", "threshold": "Probability threshold", "precision": "Precision", "recall": "Recall", "f1": "F1 score", "number_targeted": "Customers targeted", "true_positives": "Churners identified", "false_positives": "False positives", "expected_revenue_saved": "Expected retained revenue", "intervention_cost": "Intervention cost", "contact_cost": "Contact cost", "net_benefit": "Expected net benefit", "roc_auc_mean": "ROC-AUC mean", "roc_auc_std": "ROC-AUC std", "average_precision_mean": "PR-AUC mean", "average_precision_std": "PR-AUC std", "accuracy_mean": "Accuracy mean", "accuracy_std": "Accuracy std", "recall_mean": "Recall mean", "recall_std": "Recall std", "precision_mean": "Precision mean", "precision_std": "Precision std", "f1_mean": "F1 mean", "f1_std": "F1 std", "brier_mean": "Brier score mean", "brier_std": "Brier score std", "model": "Model"}
+    return labels.get(name, name.replace("_", " ").title())
 
-        try:
-            input_proc = preprocessor.transform(input_data[col_config['numeric'] + col_config['categorical']])
-            proba = xgb.predict_proba(input_proc)[0][1]
-            pred = xgb.predict(input_proc)[0]
 
-            st.subheader("Prediction Result:")
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if pred == 1:
-                    st.error("⚠️ HIGH CHURN RISK")
-                else:
-                    st.success("✅ LOW CHURN RISK")
-            with col_b:
-                st.metric("Churn Probability", f"{proba*100:.1f}%")
+artifacts = load_artifacts(); frame = get_data()
+metadata = json.loads((ARTIFACTS / "metadata.json").read_text(encoding="utf-8"))
+selected_threshold = float(metadata["business"]["optimized"]["threshold"])
+st.title("Telco Churn Intelligence")
+st.caption("A calibrated, explainable retention decision-support system")
+risk_tab, business_tab, segment_tab, survival_tab, uplift_tab, evidence_tab = st.tabs(["Customer Risk", "Business Decision", "Customer Segments", "Survival Analysis", "Uplift", "Model Evidence"])
 
-            st.progress(float(proba))
+with risk_tab:
+    st.subheader("Score a customer")
+    with st.form("customer_form"):
+        values = customer_inputs(frame); submitted = st.form_submit_button("Score customer", type="primary")
+    if submitted:
+        row = customer_row(values); probability = float(artifacts["model"].predict_proba(row)[0, 1]); st.metric("Calibrated churn probability", f"{probability:.1%}"); st.progress(probability)
+        risk_label = "High risk" if probability >= selected_threshold else "Lower risk"
+        decision = "Prioritize retention outreach" if probability >= selected_threshold else "Monitor customer"
+        st.markdown(f'<div class="risk-note"><strong>{risk_label}</strong> | {decision} | Business operating threshold: {selected_threshold:.0%}</div>', unsafe_allow_html=True)
+        cox_features = cox_row(row).reindex(columns=artifacts["cox"].params_.index, fill_value=0)
+        estimate = survival_estimate(artifacts["cox"], cox_features.iloc[0].to_dict())
+        st.write("Estimated probability this customer remains active")
+        survival_columns = st.columns(3)
+        for container, horizon in zip(survival_columns, ["6", "12", "24"]): container.metric(f"After {horizon} months", f"{estimate['survival_probability'][horizon]:.1%}")
+        if estimate["median_months"] is not None: st.metric("Median predicted survival", f"{estimate['median_months']:.0f} months")
+        else: st.info("Median survival time was not reached within the observed follow-up.")
+        transformed = artifacts["xgb"].named_steps["preprocessor"].transform(row); names = artifacts["xgb"].named_steps["preprocessor"].get_feature_names_out().tolist()
+        explain = __import__("src.explain", fromlist=["local_explanation"]).local_explanation(artifacts["xgb"].named_steps["model"], transformed, names)
+        explain_frame = pd.DataFrame(explain)
+        explain_frame["feature"] = explain_frame["feature"].map(display_feature_name)
+        explain_frame["direction"] = explain_frame["shap_value"].map(lambda value: "Toward churn" if value > 0 else "Away from churn")
+        explain_frame = explain_frame.rename(columns={"feature": "Driver", "shap_value": "Contribution", "direction": "Effect"})
+        st.caption("Positive contribution increases predicted churn; negative contribution lowers it.")
+        st.dataframe(explain_frame, use_container_width=True, hide_index=True)
 
-            if proba > 0.7:
-                st.warning("🚨 Immediate retention action recommended!")
-            elif proba > 0.4:
-                st.info("⚠️ Monitor this customer closely")
-            else:
-                st.success("✅ Customer likely to stay")
+with business_tab:
+    st.subheader("Net-benefit threshold")
+    st.write("Business assumptions, not observed causal effects")
+    assumption_labels = {"monthly_revenue": "Monthly revenue", "retention_effect": "Expected retention effect", "intervention_cost": "Intervention cost", "contact_cost": "Contact cost", "customer_lifetime_months": "Customer lifetime (months)", "false_positive_cost": "False-positive opportunity cost"}
+    st.dataframe(pd.DataFrame({"Assumption": [assumption_labels[key] for key in BUSINESS_PARAMS], "Value": list(BUSINESS_PARAMS.values())}), use_container_width=True, hide_index=True)
+    table = pd.read_csv(ARTIFACTS / "threshold_analysis.csv"); selected = table.loc[table.net_benefit.idxmax()]
+    st.metric("Selected threshold", f"{selected.threshold:.2f}"); st.metric("Expected net benefit", f"{selected.net_benefit:,.0f}")
+    threshold_view = table[table.threshold.isin([.5, selected.threshold])].rename(columns=display_column_name)
+    st.dataframe(threshold_view, use_container_width=True, hide_index=True)
+    st.image(str(ARTIFACTS / "threshold_optimization.png"), caption="Expected net benefit by threshold")
 
-        except Exception as e:
-            st.error(f"Prediction error: {e}")
+with segment_tab:
+    st.subheader("Customer segments")
+    _, profiles, _ = fit_segmentation(frame); profile_view = profiles.rename(columns=display_column_name); st.dataframe(profile_view, use_container_width=True, hide_index=True); st.bar_chart(profiles.set_index("name")[["customers", "churn_rate"]]); st.image(str(ARTIFACTS / "segment_selection.png"), caption="Elbow and silhouette diagnostics")
 
-with tab2:
-    st.header("🧠 SHAP Feature Importance")
-    st.markdown("Why does the model predict churn? SHAP values explain each feature's contribution.")
-    st.image("shap_plot.png", caption="Top 10 features driving churn", use_column_width=True)
-    st.subheader("Key Insights:")
-    st.markdown("""
-    - **IsMonthToMonth** — strongest churn driver. Month-to-month customers churn most.
-    - **Tenure** — longer tenure = lower churn risk. New customers are highest risk.
-    - **AverageCharges** — higher average charges increase churn probability.
-    - **TotalCharges** — customers who have paid more overall tend to stay longer.
-    - **InternetService_Fiber optic** — fiber optic users churn more than DSL users.
-    """)
+with survival_tab:
+    st.subheader("When might churn happen?")
+    st.write("Classification estimates if churn occurs; survival analysis estimates when it may occur, supporting contact timing.")
+    lifelines = __import__("lifelines", fromlist=["KaplanMeierFitter"]); group_by = st.selectbox("Compare by", ["Contract", "InternetService"]); fig, ax = plt.subplots(figsize=(8, 4)); lifelines.KaplanMeierFitter().fit(frame.tenure, frame.Churn, label="All customers").plot_survival_function(ax=ax)
+    for value, group in frame.groupby(group_by): lifelines.KaplanMeierFitter().fit(group.tenure, group.Churn, label=str(value)).plot_survival_function(ax=ax)
+    ax.set(xlabel="Tenure (months)", ylabel="Probability remaining", title=f"Kaplan-Meier survival by {group_by}"); st.pyplot(fig); plt.close(fig)
 
-with tab3:
-    st.header("💰 Business Impact Calculator")
-    st.markdown("Estimate revenue saved by deploying this model in production")
+with uplift_tab:
+    st.subheader("Retention uplift prioritization")
+    st.error("SIMULATED - NOT HISTORICAL TREATMENT DATA")
+    st.write("Positive predicted retention uplift means the offer is expected to reduce churn more for that customer. This is a T-learner demonstration using randomized synthetic treatment.")
+    st.image(str(ARTIFACTS / "uplift_gain.png"), caption="Risk targeting vs predicted benefit targeting")
+    uplift_summary = metadata["uplift"]["summary"]
+    uplift_view = pd.DataFrame([{"Metric": "Mean predicted churn reduction", "Value": uplift_summary["mean_predicted_retention_uplift"]}, {"Metric": "Mean simulated treatment effect", "Value": uplift_summary["true_effect_mean"]}, {"Metric": "Correlation with simulated effect", "Value": uplift_summary["correlation_with_true_effect"]}, {"Metric": "Mean absolute error", "Value": uplift_summary["mae"]}, {"Metric": "Root mean squared error", "Value": uplift_summary["rmse"]}])
+    st.dataframe(uplift_view, use_container_width=True, hide_index=True)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        total_customers = st.number_input("Total customers", 1000, 1000000, 7032)
-        avg_monthly_revenue = st.number_input("Avg monthly revenue per customer ($)", 10, 500, 70)
-    with col2:
-        churn_rate = st.slider("Expected churn rate (%)", 5, 50, 26)
-        retention_rate = st.slider("Retention success rate (%)", 10, 50, 30)
-
-    if st.button("💰 Calculate Impact", type="primary"):
-        expected_churners = int(total_customers * churn_rate / 100)
-        correctly_identified = int(expected_churners * 0.836)
-        customers_saved = int(correctly_identified * retention_rate / 100)
-        monthly_saved = customers_saved * avg_monthly_revenue
-        annual_saved = monthly_saved * 12
-
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            st.metric("Churners identified", f"{correctly_identified:,}")
-        with col_b:
-            st.metric("Customers retained", f"{customers_saved:,}")
-        with col_c:
-            st.metric("Annual revenue saved", f"INR {annual_saved*83:,.0f}")
-
-        st.success(f"This model saves approximately **INR {annual_saved*83/100000:.1f} Lakhs/year**!")
+with evidence_tab:
+    st.subheader("Model evidence")
+    evidence_view = pd.DataFrame(metadata["cv"]["models"]).rename(columns=display_column_name); st.dataframe(evidence_view, use_container_width=True, hide_index=True); st.write("Final holdout metrics"); st.dataframe(pd.DataFrame([metadata["evaluation"]["selected_model_test_metrics"]]).rename(columns=display_column_name), use_container_width=True, hide_index=True); st.image(str(ARTIFACTS / "calibration_curve.png"), caption="Calibration curve"); st.image(str(ARTIFACTS / "shap_summary.png"), caption="Global SHAP importance")

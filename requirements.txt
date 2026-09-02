@@ -7,3 +7,5 @@ shap
 matplotlib
 joblib
 imbalanced-learn
+lifelines
+pytest

@@ -1,0 +1,693 @@
+{
+  "dataset": {
+    "name": "IBM Telco Customer Churn",
+    "rows": 7032,
+    "source": "IBM public repository"
+  },
+  "feature_version": "telco-v2-average-total-charges",
+  "model_version": "xgb-calibrated-v2",
+  "random_state": 42,
+  "training_timestamp_utc": "2026-09-02T18:44:31.273278+00:00",
+  "python_version": "3.13.7",
+  "evaluation_protocol": "80/20 stratified holdout; model comparison and tuning use StratifiedKFold(5) only on training data; final metrics use untouched test data",
+  "cv": {
+    "protocol": "StratifiedKFold(n_splits=5, shuffle=True, random_state=42)",
+    "models": [
+      {
+        "model": "Logistic Regression",
+        "roc_auc_mean": 0.8457651412699313,
+        "roc_auc_std": 0.005420313970859037,
+        "average_precision_mean": 0.6585701183019121,
+        "average_precision_std": 0.012440005822788057,
+        "accuracy_mean": 0.7518222222222223,
+        "accuracy_std": 0.005633059384090626,
+        "recall_mean": 0.802675585284281,
+        "recall_std": 0.015687009230178683,
+        "precision_mean": 0.5215611001153094,
+        "precision_std": 0.007081162428652412,
+        "f1_mean": 0.6322219812160739,
+        "f1_std": 0.00823219001265876,
+        "brier_mean": 0.16513395355360533,
+        "brier_std": 0.0037898401306796685
+      },
+      {
+        "model": "Random Forest",
+        "roc_auc_mean": 0.844520475839562,
+        "roc_auc_std": 0.0061633107108652885,
+        "average_precision_mean": 0.654528134896489,
+        "average_precision_std": 0.01822486451119124,
+        "accuracy_mean": 0.7701333333333333,
+        "accuracy_std": 0.003999012223716257,
+        "recall_mean": 0.7451505016722407,
+        "recall_std": 0.0179981592602993,
+        "precision_mean": 0.5499724616537905,
+        "precision_std": 0.006338894729946537,
+        "f1_mean": 0.6327166042697949,
+        "f1_std": 0.00658755630827078,
+        "brier_mean": 0.1531599931889725,
+        "brier_std": 0.0029763987742614175
+      },
+      {
+        "model": "XGBoost",
+        "roc_auc_mean": 0.8474608663260099,
+        "roc_auc_std": 0.004755857111873425,
+        "average_precision_mean": 0.6615458084844911,
+        "average_precision_std": 0.009091820248112791,
+        "accuracy_mean": 0.8007111111111112,
+        "accuracy_std": 0.004332820482472508,
+        "recall_mean": 0.5297658862876254,
+        "recall_std": 0.02435737987429179,
+        "precision_mean": 0.6545167116035457,
+        "precision_std": 0.006950856227580857,
+        "f1_mean": 0.5852976630084873,
+        "f1_std": 0.01576420471878833,
+        "brier_mean": 0.13466569483280183,
+        "brier_std": 0.0012202989525824648
+      }
+    ]
+  },
+  "xgboost_search_space": {
+    "model__max_depth": [
+      3,
+      4,
+      5,
+      6,
+      8
+    ],
+    "model__learning_rate": [
+      0.02,
+      0.05,
+      0.1,
+      0.2
+    ],
+    "model__n_estimators": [
+      150,
+      250,
+      400,
+      600
+    ],
+    "model__subsample": [
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "model__colsample_bytree": [
+      0.7,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "model__min_child_weight": [
+      1,
+      2,
+      5,
+      10
+    ]
+  },
+  "best_xgboost_params": {
+    "model__subsample": 0.9,
+    "model__n_estimators": 150,
+    "model__min_child_weight": 2,
+    "model__max_depth": 5,
+    "model__learning_rate": 0.05,
+    "model__colsample_bytree": 0.7
+  },
+  "evaluation": {
+    "selected_model_test_metrics": {
+      "roc_auc": 0.8370951126204245,
+      "average_precision": 0.6523056682551958,
+      "accuracy": 0.48187633262260127,
+      "precision": 0.3378995433789954,
+      "recall": 0.9893048128342246,
+      "f1": 0.5037440435670524,
+      "brier_score": 0.14101296182739984,
+      "confusion_matrix": [
+        [
+          308,
+          725
+        ],
+        [
+          4,
+          370
+        ]
+      ]
+    },
+    "calibration": {
+      "sigmoid": {
+        "roc_auc": 0.8370951126204245,
+        "average_precision": 0.6523056682551958,
+        "accuracy": 0.7938877043354655,
+        "precision": 0.6428571428571429,
+        "recall": 0.5053475935828877,
+        "f1": 0.5658682634730539,
+        "brier_score": 0.14101296182739984,
+        "confusion_matrix": [
+          [
+            928,
+            105
+          ],
+          [
+            185,
+            189
+          ]
+        ]
+      },
+      "isotonic": {
+        "roc_auc": 0.8364751955521273,
+        "average_precision": 0.6509430915181624,
+        "accuracy": 0.7938877043354655,
+        "precision": 0.6409395973154363,
+        "recall": 0.5106951871657754,
+        "f1": 0.5684523809523809,
+        "brier_score": 0.13943112492176166,
+        "confusion_matrix": [
+          [
+            926,
+            107
+          ],
+          [
+            183,
+            191
+          ]
+        ]
+      }
+    }
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "metrics": {
+      "sigmoid": {
+        "roc_auc": 0.8370951126204245,
+        "average_precision": 0.6523056682551958,
+        "accuracy": 0.7938877043354655,
+        "precision": 0.6428571428571429,
+        "recall": 0.5053475935828877,
+        "f1": 0.5658682634730539,
+        "brier_score": 0.14101296182739984,
+        "confusion_matrix": [
+          [
+            928,
+            105
+          ],
+          [
+            185,
+            189
+          ]
+        ]
+      },
+      "isotonic": {
+        "roc_auc": 0.8364751955521273,
+        "average_precision": 0.6509430915181624,
+        "accuracy": 0.7938877043354655,
+        "precision": 0.6409395973154363,
+        "recall": 0.5106951871657754,
+        "f1": 0.5684523809523809,
+        "brier_score": 0.13943112492176166,
+        "confusion_matrix": [
+          [
+            926,
+            107
+          ],
+          [
+            183,
+            191
+          ]
+        ]
+      }
+    }
+  },
+  "business": {
+    "assumptions": {
+      "monthly_revenue": 70.0,
+      "retention_effect": 0.3,
+      "intervention_cost": 12.0,
+      "contact_cost": 2.0,
+      "customer_lifetime_months": 12,
+      "false_positive_cost": 0.0
+    },
+    "at_0.5": {
+      "threshold": 0.5,
+      "precision": 0.6428571428571429,
+      "recall": 0.5053475935828877,
+      "f1": 0.5658682634730539,
+      "number_targeted": 294,
+      "true_positives": 189,
+      "false_positives": 105,
+      "expected_revenue_saved": 47628.0,
+      "intervention_cost": 3528.0,
+      "contact_cost": 588.0,
+      "net_benefit": 43512.0
+    },
+    "optimized": {
+      "threshold": 0.07,
+      "precision": 0.3378995433789954,
+      "recall": 0.9893048128342246,
+      "f1": 0.5037440435670524,
+      "number_targeted": 1095.0,
+      "true_positives": 370.0,
+      "false_positives": 725.0,
+      "expected_revenue_saved": 93240.0,
+      "intervention_cost": 13140.0,
+      "contact_cost": 2190.0,
+      "net_benefit": 77910.0
+    }
+  },
+  "segments": {
+    "features": [
+      "tenure",
+      "MonthlyCharges",
+      "AverageCharges",
+      "SeniorCitizen",
+      "IsMonthToMonth",
+      "HasInternet"
+    ],
+    "selection": [
+      {
+        "k": 2,
+        "inertia": 26418.24207924078,
+        "silhouette": 0.4156515969845817
+      },
+      {
+        "k": 3,
+        "inertia": 18174.31632609683,
+        "silhouette": 0.3978742762276211
+      },
+      {
+        "k": 4,
+        "inertia": 13022.242105556776,
+        "silhouette": 0.4552933804195196
+      },
+      {
+        "k": 5,
+        "inertia": 11006.511049508745,
+        "silhouette": 0.4173510462764316
+      },
+      {
+        "k": 6,
+        "inertia": 9001.124159097419,
+        "silhouette": 0.45003654220888567
+      },
+      {
+        "k": 7,
+        "inertia": 7591.23486963093,
+        "silhouette": 0.4499661218990651
+      },
+      {
+        "k": 8,
+        "inertia": 6215.754675926638,
+        "silhouette": 0.46390889804969376
+      }
+    ],
+    "profiles": [
+      {
+        "segment_id": 0,
+        "customers": 1468,
+        "avg_tenure": 22.03882833787466,
+        "avg_monthly_charges": 87.07050408719346,
+        "avg_total_charges": 1977.1711852861033,
+        "churn_rate": 0.49182561307901906,
+        "dominant_Contract": "Month-to-month",
+        "dominant_InternetService": "Fiber optic",
+        "name": "High-Value At-Risk"
+      },
+      {
+        "segment_id": 1,
+        "customers": 996,
+        "avg_tenure": 42.00100401606426,
+        "avg_monthly_charges": 21.427058232931724,
+        "avg_total_charges": 915.6246485943775,
+        "churn_rate": 0.014056224899598393,
+        "dominant_Contract": "Two year",
+        "dominant_InternetService": "No",
+        "name": "Loyal Long-Tenure"
+      },
+      {
+        "segment_id": 2,
+        "customers": 1006,
+        "avg_tenure": 60.934393638170974,
+        "avg_monthly_charges": 97.42798210735587,
+        "avg_total_charges": 5937.180218687872,
+        "churn_rate": 0.110337972166998,
+        "dominant_Contract": "Two year",
+        "dominant_InternetService": "Fiber optic",
+        "name": "Loyal Long-Tenure"
+      },
+      {
+        "segment_id": 3,
+        "customers": 863,
+        "avg_tenure": 44.061413673232906,
+        "avg_monthly_charges": 61.11575898030128,
+        "avg_total_charges": 2689.3560254924682,
+        "churn_rate": 0.06257242178447277,
+        "dominant_Contract": "One year",
+        "dominant_InternetService": "DSL",
+        "name": "Loyal Long-Tenure"
+      },
+      {
+        "segment_id": 4,
+        "customers": 1085,
+        "avg_tenure": 12.728110599078342,
+        "avg_monthly_charges": 50.72271889400922,
+        "avg_total_charges": 633.8776497695852,
+        "churn_rate": 0.36682027649769583,
+        "dominant_Contract": "Month-to-month",
+        "dominant_InternetService": "DSL",
+        "name": "Emerging / Watchlist"
+      },
+      {
+        "segment_id": 5,
+        "customers": 725,
+        "avg_tenure": 19.459310344827585,
+        "avg_monthly_charges": 77.74986206896551,
+        "avg_total_charges": 1571.8875172413793,
+        "churn_rate": 0.5737931034482758,
+        "dominant_Contract": "Month-to-month",
+        "dominant_InternetService": "Fiber optic",
+        "name": "High-Value At-Risk"
+      },
+      {
+        "segment_id": 6,
+        "customers": 365,
+        "avg_tenure": 59.66849315068493,
+        "avg_monthly_charges": 92.18438356164384,
+        "avg_total_charges": 5538.228082191781,
+        "churn_rate": 0.1506849315068493,
+        "dominant_Contract": "One year",
+        "dominant_InternetService": "Fiber optic",
+        "name": "Loyal Long-Tenure"
+      },
+      {
+        "segment_id": 7,
+        "customers": 524,
+        "avg_tenure": 9.125954198473282,
+        "avg_monthly_charges": 20.409541984732826,
+        "avg_total_charges": 189.26097328244273,
+        "churn_rate": 0.18893129770992367,
+        "dominant_Contract": "Month-to-month",
+        "dominant_InternetService": "No",
+        "name": "Emerging / Watchlist"
+      }
+    ],
+    "cross_tab": [
+      {
+        "segment_id": 0,
+        "actual_churn_rate": 0.49182561307901906,
+        "predicted_risk": 0.4830295681651681
+      },
+      {
+        "segment_id": 1,
+        "actual_churn_rate": 0.014056224899598393,
+        "predicted_risk": 0.06647918100072205
+      },
+      {
+        "segment_id": 2,
+        "actual_churn_rate": 0.110337972166998,
+        "predicted_risk": 0.11499517841261636
+      },
+      {
+        "segment_id": 3,
+        "actual_churn_rate": 0.06257242178447277,
+        "predicted_risk": 0.0839929082563795
+      },
+      {
+        "segment_id": 4,
+        "actual_churn_rate": 0.36682027649769583,
+        "predicted_risk": 0.3457482252581889
+      },
+      {
+        "segment_id": 5,
+        "actual_churn_rate": 0.5737931034482758,
+        "predicted_risk": 0.5489973008371023
+      },
+      {
+        "segment_id": 6,
+        "actual_churn_rate": 0.1506849315068493,
+        "predicted_risk": 0.1593014513787506
+      },
+      {
+        "segment_id": 7,
+        "actual_churn_rate": 0.18893129770992367,
+        "predicted_risk": 0.17032088965587594
+      }
+    ]
+  },
+  "survival": {
+    "duration": "tenure",
+    "event": "Churn",
+    "excluded_predictors": [
+      "tenure",
+      "TenureGroup",
+      "AverageCharges",
+      "IsMonthToMonth",
+      "HasInternet"
+    ],
+    "hazard_ratios": [
+      {
+        "feature": "SeniorCitizen",
+        "hazard_ratio": 1.0477142272861102,
+        "lower_95": 0.951593132183174,
+        "upper_95": 1.1535445821675303,
+        "p_value": 0.34243728692619074
+      },
+      {
+        "feature": "MonthlyCharges",
+        "hazard_ratio": 1.002897924713336,
+        "lower_95": 1.0006644981034354,
+        "upper_95": 1.005136336205214,
+        "p_value": 0.010960839666994605
+      },
+      {
+        "feature": "TotalCharges",
+        "hazard_ratio": 0.9996244300989439,
+        "lower_95": 0.999598320221708,
+        "upper_95": 0.9996505406581794,
+        "p_value": 8.472028976866685e-175
+      },
+      {
+        "feature": "gender_Male",
+        "hazard_ratio": 0.9662202138630389,
+        "lower_95": 0.8942871351784165,
+        "upper_95": 1.0439393176457588,
+        "p_value": 0.3839910986900067
+      },
+      {
+        "feature": "Partner_Yes",
+        "hazard_ratio": 0.7333266453556904,
+        "lower_95": 0.6739126913329467,
+        "upper_95": 0.7979786932413565,
+        "p_value": 6.246065418190895e-13
+      },
+      {
+        "feature": "Dependents_Yes",
+        "hazard_ratio": 0.857398796351416,
+        "lower_95": 0.775535096655725,
+        "upper_95": 0.9479038397551678,
+        "p_value": 0.002656404954386497
+      },
+      {
+        "feature": "PhoneService_Yes",
+        "hazard_ratio": 1.1172795266224214,
+        "lower_95": 0.9191108312279033,
+        "upper_95": 1.3581752038999628,
+        "p_value": 0.26560815817721867
+      },
+      {
+        "feature": "MultipleLines_No phone service",
+        "hazard_ratio": 0.8950311682726686,
+        "lower_95": 0.7362820327808425,
+        "upper_95": 1.0880080682587878,
+        "p_value": 0.26560815817721817
+      },
+      {
+        "feature": "MultipleLines_Yes",
+        "hazard_ratio": 0.8588831462276959,
+        "lower_95": 0.7888621428275236,
+        "upper_95": 0.9351193558736557,
+        "p_value": 0.0004549024184804776
+      },
+      {
+        "feature": "InternetService_Fiber optic",
+        "hazard_ratio": 1.6039461404397761,
+        "lower_95": 1.4459721970663622,
+        "upper_95": 1.77917889891045,
+        "p_value": 4.2191293091457177e-19
+      },
+      {
+        "feature": "InternetService_No",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.009251106056912714
+      },
+      {
+        "feature": "OnlineSecurity_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.00925110605691275
+      },
+      {
+        "feature": "OnlineSecurity_Yes",
+        "hazard_ratio": 0.6536189527489148,
+        "lower_95": 0.5922463999560279,
+        "upper_95": 0.7213513419825051,
+        "p_value": 2.8499632220360376e-17
+      },
+      {
+        "feature": "OnlineBackup_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.00925110605691275
+      },
+      {
+        "feature": "OnlineBackup_Yes",
+        "hazard_ratio": 0.731418933904732,
+        "lower_95": 0.6699731017878297,
+        "upper_95": 0.7985002016450397,
+        "p_value": 2.82777978729998e-12
+      },
+      {
+        "feature": "DeviceProtection_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.00925110605691275
+      },
+      {
+        "feature": "DeviceProtection_Yes",
+        "hazard_ratio": 0.8328237104153093,
+        "lower_95": 0.7623500497257918,
+        "upper_95": 0.9098121432265938,
+        "p_value": 5.0097550795283066e-05
+      },
+      {
+        "feature": "TechSupport_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.00925110605691275
+      },
+      {
+        "feature": "TechSupport_Yes",
+        "hazard_ratio": 0.7149224455216359,
+        "lower_95": 0.647697185720501,
+        "upper_95": 0.7891250948420765,
+        "p_value": 2.729452810039669e-11
+      },
+      {
+        "feature": "StreamingTV_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.009251106056912714
+      },
+      {
+        "feature": "StreamingTV_Yes",
+        "hazard_ratio": 1.0360380193445209,
+        "lower_95": 0.9490264183337246,
+        "upper_95": 1.1310272894319642,
+        "p_value": 0.4289322230956021
+      },
+      {
+        "feature": "StreamingMovies_No internet service",
+        "hazard_ratio": 0.7991731059785853,
+        "lower_95": 0.675029310562743,
+        "upper_95": 0.9461480313899568,
+        "p_value": 0.00925110605691275
+      },
+      {
+        "feature": "StreamingMovies_Yes",
+        "hazard_ratio": 1.0093711149487674,
+        "lower_95": 0.9245348781514561,
+        "upper_95": 1.101992008922366,
+        "p_value": 0.8350440699867305
+      },
+      {
+        "feature": "Contract_One year",
+        "hazard_ratio": 0.513557277941082,
+        "lower_95": 0.45810158774165965,
+        "upper_95": 0.5757261812307602,
+        "p_value": 2.9626671734951913e-30
+      },
+      {
+        "feature": "Contract_Two year",
+        "hazard_ratio": 0.34755724291023726,
+        "lower_95": 0.30495421183393717,
+        "upper_95": 0.3961120470280475,
+        "p_value": 1.6522792319936165e-56
+      },
+      {
+        "feature": "PaperlessBilling_Yes",
+        "hazard_ratio": 1.201545231175014,
+        "lower_95": 1.1002289338042361,
+        "upper_95": 1.312191397809847,
+        "p_value": 4.403876489396328e-05
+      },
+      {
+        "feature": "PaymentMethod_Credit card (automatic)",
+        "hazard_ratio": 0.823683732790052,
+        "lower_95": 0.7343830529764016,
+        "upper_95": 0.9238433388586856,
+        "p_value": 0.0009234313995357008
+      },
+      {
+        "feature": "PaymentMethod_Electronic check",
+        "hazard_ratio": 1.4684469795726962,
+        "lower_95": 1.3386742619814185,
+        "upper_95": 1.610800022870766,
+        "p_value": 3.998802287562859e-16
+      },
+      {
+        "feature": "PaymentMethod_Mailed check",
+        "hazard_ratio": 1.2639800963488128,
+        "lower_95": 1.1274164634844892,
+        "upper_95": 1.4170856428937841,
+        "p_value": 5.924861579140668e-05
+      }
+    ],
+    "cox_features": [
+      "SeniorCitizen",
+      "MonthlyCharges",
+      "TotalCharges",
+      "gender_Male",
+      "Partner_Yes",
+      "Dependents_Yes",
+      "PhoneService_Yes",
+      "MultipleLines_No phone service",
+      "MultipleLines_Yes",
+      "InternetService_Fiber optic",
+      "InternetService_No",
+      "OnlineSecurity_No internet service",
+      "OnlineSecurity_Yes",
+      "OnlineBackup_No internet service",
+      "OnlineBackup_Yes",
+      "DeviceProtection_No internet service",
+      "DeviceProtection_Yes",
+      "TechSupport_No internet service",
+      "TechSupport_Yes",
+      "StreamingTV_No internet service",
+      "StreamingTV_Yes",
+      "StreamingMovies_No internet service",
+      "StreamingMovies_Yes",
+      "Contract_One year",
+      "Contract_Two year",
+      "PaperlessBilling_Yes",
+      "PaymentMethod_Credit card (automatic)",
+      "PaymentMethod_Electronic check",
+      "PaymentMethod_Mailed check"
+    ]
+  },
+  "uplift": {
+    "treatment": "SIMULATED randomized retention offer",
+    "outcome": "simulated churn after offer",
+    "summary": {
+      "mean_predicted_retention_uplift": 0.05765005799058729,
+      "true_effect_mean": 0.09726393629124004,
+      "correlation_with_true_effect": 0.23500257525699467,
+      "mae": 0.10557032243875675,
+      "rmse": 0.13821075864751198
+    }
+  }
+}
